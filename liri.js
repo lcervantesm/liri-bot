@@ -1,101 +1,138 @@
 require("dotenv").config();
-var request = require("request");
-var moment = require("moment");
-var fs = require("fs");
-var keys = require("./keys");
-var Spotify = require('node-spotify-api')
-var spotify = new Spotify(keys.spotify);
-var command = process.argv[2];
-var searchTerm = "";
+const keys = require("./keys.js");
+const Spotify = require("node-spotify-api");
+const request = require("request");
+const inquirer = require("inquirer");
+const moment = require('moment');
+const fs = require('fs');
 
-//If there is a search term, assign it to a variable
-if (process.argv.length > 3) {
-    for (i = 3; i < process.argv.length - 1; i++) {
-        searchTerm += process.argv[i] + "%20";
+const defaultSong = 'Despacito';
+const defaultMovie = 'Remember The Titans';
+const defaultArtist = 'Vicente Feranandez';
+
+inquirer.prompt([
+    {
+        type: "list",
+        message: "What would you like to do?",
+        choices: [
+            "Song Search",
+            "Concert Search",
+            "Movie Search",
+            "Do What It Says"
+        ],
+        name: "liri"
     }
-    searchTerm += process.argv[process.argv.length - 1];
-}
-
-//What to do if searchTerm is blank for commands that require a searchTerm
-if (command === "movie-this" && searchTerm === "") {
-    searchTerm = "Mr. Nobody";
-} else if (command === "spotify-this-song" && searchTerm === "") {
-    searchTerm = "I Saw the Sign";
-}
-
-takeCommand(command, searchTerm);
-
-function takeCommand(command, searchTerm) {
-    switch (command) {
-        case "concert-this":
-            //Search BandsInTown API for artist to provide venue name, location, and date of all upcoming concerts.
-            var queryUrl = "https://rest.bandsintown.com/artists/" + searchTerm + "/events?app_id=codingbootcamp"
-            request(queryUrl, function (error, response, body) {
-                // If the request is successful
-                if (!error && response.statusCode === 200) {
-                    var concert = JSON.parse(body);
-                    console.log("---Upcoming concerts---")
-                    for (i = 0; i < concert.length; i++) {
-                        console.log(concert[i].lineup + " at " + concert[i].venue.name);
-                        var time = concert[i].datetime;
-                        var parsedTime = moment(time).format("MM/DD/YYYY");
-                        console.log(parsedTime);
-                        console.log(concert[i].venue.city + ", " + concert[i].venue.region);
-                    }
+]).then((response) => {
+    switch (response.liri) {
+        case "Song Search":
+            inquirer.prompt([
+                {
+                    type: "input",
+                    message: "What song should I search?",
+                    name: "song"
+                }
+            ]).then((response) => {
+                if (response.song) {
+                    songSearch(response.song);
+                } else {
+                    songSearch(defaultSong);
                 }
             });
             break;
-        case "spotify-this-song":
-            //Search Spotify for the song and return song name, artist(s), preview link of the song, and the album that the song is from
-            spotify.search({ type: 'track', query: searchTerm, limit: 1 }, function (err, data) {
-                if (err) {
-                    return console.log('Error occurred: ' + err);
+        case "Concert Search":
+            inquirer.prompt([
+                {
+                    type: "input",
+                    message: "What artist should I search?",
+                    name: "artist"
                 }
-                var song = data.tracks.items[0];
-                console.log("---" + song.name + "---");
-                console.log("As sung by:",song.artists[0].name);
-                console.log("On the album:",song.album.name);
-                console.log("Preview it at:",song.preview_url);
-
-            });
-            break;
-        case "movie-this":
-            //Search the OMDB API to show movie title, release year, IMDB rating, Rotten Tomatoes rating, country where the movie was produced, language of the movie, plot summary, and actors.
-            var queryUrl = "http://www.omdbapi.com/?t=" + searchTerm + "&y=&plot=short&apikey=trilogy";
-            request(queryUrl, function (error, response, body) {
-                // If the request is successful
-                if (!error && response.statusCode === 200) {
-                    var movie = JSON.parse(body);
-                    console.log("---" + movie.Title + "---");
-                    console.log("Released in", movie.Year);
-                    console.log(movie.Ratings[0].Source + " rating: " + movie.Ratings[0].Value);
-                    console.log(movie.Ratings[1].Source + " rating: " + movie.Ratings[1].Value);
-                    console.log("Produced in", movie.Country);
-                    console.log("Language:", movie.Language);
-                    console.log("Leading actors:", movie.Actors);
-                    console.log("Summary:", movie.Plot);
+            ]).then((response) => {
+                if (response.artist) {
+                    concertSearch(response.artist);
+                } else {
+                    concertSearch(defaultArtist);
                 }
             });
             break;
-        case "do-what-it-says":
-            //Do what "random.txt" says.
-            fs.readFile("random.txt", "utf8", function (error, data) {
-                var splitFile = data.split(",");
-                takeCommand(splitFile[0], splitFile[1]);
+        case "Movie Search":
+            inquirer.prompt([
+                {
+                    type: "input",
+                    message: "What movie should I search?",
+                    name: "movie"
+                }
+            ]).then((response) => {
+                if (response.movie) {
+                    movieSearch(response.movie);
+                } else {
+                    movieSearch(defaultMovie);
+                }
             });
             break;
-        default:
-            console.log("Arguments not understood");
+        case "Do What It Says":
+            doWhatItSays();
+            break;
     }
+});
+
+let songSearch = (song) => {
+  let spotify = new Spotify(keys.spotify);
+
+  spotify.search({
+      type: "track",
+      query: song,
+      limit: "1"
+    }).then((response) => {
+      let album = response.tracks.items[0].album.name;
+      let song = response.tracks.items[0].name;
+      let artist = response.tracks.items[0].artists[0].name;
+      let prevUrl = response.tracks.items[0].preview_url
+          ? response.tracks.items[0].preview_url
+          : "Not Available";
+
+      console.log(`\nArtist: ${artist} \nSong: ${song} \nAlbum: ${album} \nPreview: ${prevUrl}`);
+    });
 };
 
-//Log all the search results to log.txt
-function logData() {
-    fs.writeFile("log.txt", data, function (err) {
-        if (err) {
-            console.log("Oops, there was an error");
-        } else {
-            console.log("Data was logged to file!")
+let movieSearch = (movie) => {
+    const key = keys.omdb.key;
+    let URL = `http://www.omdbapi.com/?t=${movie}`;
+    let params = `&plot=short&apikey=${key}`;
+    request(URL+params, (error, response, body) => {
+        let resp = JSON.parse(body);
+        let title = resp.Title;
+        let release = resp.Released;
+        let imdb = resp.Ratings[0].Value ? resp.Ratings[0].Value : 'Not Available.';
+        let rotTom = resp.Ratings[1].Value ? resp.Ratings[1].Value : 'Not Available.';
+        let country = resp.Country;
+        let lang = resp.Language;
+        let plot = resp.Plot;
+        let actors = resp.Actors;
+        console.log(`\nTitle: ${title} \nRelease Date: ${release} \nIMDB Rating: ${imdb} \nRotten Tomatoes: ${rotTom} \nCountry: ${country} \nLanguage: ${lang} \nPlot: ${plot} \nActors: ${actors}`);
+    });
+};
+
+let concertSearch = (artist) => {
+    //   console.log("Not Available Yet!");
+    const apiKey = keys.bandsInTown.key;
+    let URL = `https://rest.bandsintown.com/artists/${artist}/events?app_id=${apiKey}`;
+    request(URL, (error, response, body) => {
+        let resp = JSON.parse(body)[0];
+        if (JSON.parse(body)[0]){
+            let venue = resp.venue.name;
+            let location = `${resp.venue.city}, ${resp.venue.country}`;
+            let date = moment(resp.datetime).format('MM/DD/YYYY');
+
+            console.log(`\nVenue: ${venue} \nLocation: ${location} \nDate: ${date}`);
+        }else {
+            console.log('No upcoming concerts!');
         }
     });
-}
+};
+
+let doWhatItSays = () => {
+    fs.readFile("random.txt", "utf8", function(err, data) {      
+        let dataArr = data.split(",");
+        songSearch(dataArr[1]);
+    });
+};

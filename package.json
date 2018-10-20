@@ -1,28 +1,28 @@
-
 {
-    "name": "liri-node-app",
-    "version": "1.0.0",
-    "description": "A command line node bot",
-    "main": "keys.js",
-    "dependencies": {
-      "dotenv": "^6.1.0",
-      "moment": "^2.22.2",
-      "request": "^2.88.0",
-      "node-spotify-api": "^1.0.7"
-    },
-    "devDependencies": {},
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "repository": {
-      "type": "git",
-      "url": "git+https://github.com/lcervantesm/liri-bot.git"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "bugs": {
-      "url": "https://github.com/lcervantesm/liri-bot/issues"
-    },
-    "homepage": "hhttps://github.com/lcervantesm/liri-bot#readme"
+  "name": "liri-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "liri.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lcervantesm/liri-bot.git"
+  },
+  "keywords": [],
+  "author": "Esteban Sánchez",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lcervantesm/liri-bot/issues"
+  },
+  "homepage": "https://github.com/lcervantesm/liri-bot#readme",
+  "dependencies": {
+    "dotenv": "^6.1.0",
+    "fs": "0.0.1-security",
+    "inquirer": "^6.2.0",
+    "moment": "^2.22.2",
+    "node-spotify-api": "^1.0.7",
+    "request": "^2.88.0"
   }
+}
